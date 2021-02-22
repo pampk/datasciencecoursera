@@ -28,21 +28,6 @@ df_dates <- df %>%
 df_dates <- df %>% 
   filter(Date=="2007-01-02" | Date=="2007-02-02")
 
-## PLOT 1
-png(filename = "Plot1.png", width = 480, height = 480, units = "px")
-
-hist(df_dates$Global_active_power, col="red",main="Global Active Power", 
-     xlab="Global Active Power (kilowatts)", ylab="Frequency", breaks=12,ylim = c(0, 1200))
-
-dev.off()
-
-## PLOT 2
-png(filename = "Plot2.png", width = 480, height = 480, units = "px")
-plot(df_dates$Global_active_power, type="l", xlab="", ylab="Global Active Power (kilowatts)", xaxt="n")
-axis(1, at = c(1,1500, nrow(df_dates)), labels = c("Thu", "Fri", "Sat"))
-
-dev.off()
-
 ## PLOT 3
 png(filename = "Plot3.png", width = 480, height = 480, units = "px")
 
