@@ -1,0 +1,126 @@
+---
+title: "Reproduceable Reasearch: Programming Assignment 1"
+output: html_document
+---
+## Loading in the data and converting the column types
+```{r setup,include=FALSE}
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(Amelia)
+```
+```{r,echo=TRUE, results='hide'}
+## LOAD IN DATA
+df <- read.csv("activity.csv")
+
+## MISSING VALUES COUNT PER COLUMN
+sapply(df, function(x) sum(is.na(x)))
+
+## CONVERT DATE FORMAT
+df$date <- ymd(df$date)
+```
+### What is the mean total number of steps taken per day?
+1. What is the mean number of steps taken per day?
+```{r}
+df_day <- df %>% 
+  group_by(date) %>% 
+  summarise(stepsNo = sum(steps))
+```
+2. Make a histogram
+```{r}
+df_day %>% 
+  ggplot(aes(x=stepsNo)) +
+  geom_histogram(binwidth = 2000, fill = "yellow", color = "orange") +
+  theme_bw() +
+  ggtitle("Histogram to show the distribution of the number of steps taken per day") +
+  xlab("Number of steps") +
+  ylab("Count") +
+  scale_x_continuous(breaks = seq(0,25000,5000)) +
+  scale_y_continuous(breaks = seq(0,14,2))
+```
+3. Calculate the mean and median number of steps taken per day
+```{r}
+## MEAN
+mean(df_day$stepsNo, na.rm = TRUE)
+
+## MEDIAN
+median(df_day$stepsNo, na.rm = TRUE)
+```
+### What is the average daily activity pattern?
+1. Make a time series plot of the 5-minute interval
+```{r}
+## TIME SERIES PLOT
+df_interval <- df %>% 
+  group_by(interval) %>% 
+  summarise(steps = mean(steps, na.rm = TRUE)) 
+df_interval %>% 
+  ggplot(aes(x=interval, y= steps)) +
+  geom_line(color="darkgreen") +
+  ggtitle("Time series plot to show the average amount of steps taken per time interval") +
+  xlab("Interval (5mins)") +
+  ylab("Mean number of steps") +
+  theme_bw()
+```
+2. Find maximum number of steps
+```{r}
+df_interval %>% 
+  select(interval, steps) %>% 
+  filter(steps == max(steps))
+
+df_interval
+```
+### Imputing missing values
+1. Calculate number of missing values
+```{r}
+sapply(df, function(x) sum(is.na(x)))
+
+##visualise using amelia
+missmap(df)
+```
+2. Fill in missing values
+```{r}
+dff <- df
+for(x in 1:nrow(dff)){
+  if(is.na(dff[x,1])==TRUE){
+    dff[x,1] <- df_interval[df_interval$interval %in% dff[x,3],2]
+  }
+}
+missmap(dff)
+```
+3. Make new histogram
+```{r}
+df_day <- dff %>% 
+  group_by(date) %>% 
+  summarise(stepsNo = sum(steps))
+
+df_day %>% 
+  ggplot(aes(x=stepsNo)) +
+  geom_histogram(binwidth = 2000, fill = "lightgreen", color = "green") +
+  theme_bw() +
+  ggtitle("Histogram to show the distribution of the number of steps taken per day") +
+  xlab("Number of steps") +
+  ylab("Count") +
+  scale_x_continuous(breaks = seq(0,25000,5000)) +
+  scale_y_continuous(breaks = seq(0,14,2))
+```
+## Are there any differences in activity patterns between weekdays and weekends?
+1. Create new factor variable
+```{r}
+## ADD IN WEEKDAY COLUMN
+dff$DayName <- weekdays(as.Date(dff$date))
+
+## ADD IN DAY TYPE COLUMN
+dff$DayType <- as.factor(ifelse(dff$DayName %in% c("Saturday", "Sunday"), "Weekend", "Weekday"))
+```
+2. Create time series plot to show difference
+```{r}
+dff %>% 
+  group_by(DayType,interval) %>% 
+  summarise(mean_steps = mean(steps)) %>% 
+  ggplot(aes(x=interval,y=mean_steps)) +
+  geom_line(aes(color=DayType)) +
+  facet_grid(rows=vars(DayType)) +
+  theme_bw() +
+  ggtitle("Time series plots to show the difference between weekends and weekdays") +
+  ylab("Mean number of steps taken") +
+  xlab("Intervals (5min)")
